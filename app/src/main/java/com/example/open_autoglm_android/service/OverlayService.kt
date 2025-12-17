@@ -48,6 +48,8 @@ class OverlayService : Service() {
         recyclerView.adapter = adapter
 
         val params = WindowManager.LayoutParams(
+            200,
+            300,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
