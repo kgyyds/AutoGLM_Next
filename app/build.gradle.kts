@@ -99,7 +99,11 @@ dependencies {
     
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
-    
+
+
+    // RecyclerView
+    implementation("androidx.recyclerview:recyclerview:1.3.1")
+
     // Image Loading
     implementation(libs.coil.compose)
     
