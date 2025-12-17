@@ -64,6 +64,8 @@ fun ChatScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+            
+                
                 // 当前应用显示
                 uiState.currentApp?.let { app ->
                     Text(
@@ -73,6 +75,15 @@ fun ChatScreen(
                 } ?: run {
                     Spacer(modifier = Modifier.width(1.dp))
                 }
+                
+                // 停止按钮
+                  Button(
+                    onClick = { viewModel.stopCurrentTask() },
+                    enabled = uiState.isLoading
+                  ) {
+                    Text("停止")
+                  }
+                
                 
                 // 清理对话按钮
                 if (uiState.messages.isNotEmpty()) {

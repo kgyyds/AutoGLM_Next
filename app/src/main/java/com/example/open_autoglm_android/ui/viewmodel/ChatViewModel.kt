@@ -41,6 +41,9 @@ data class ChatUiState(
 
 class ChatViewModel(application: Application) : AndroidViewModel(application) {
     
+    //对话停止开关
+    private var stopFlag = false
+    
     private val preferencesRepository = PreferencesRepository(application)
     
     private val _uiState = MutableStateFlow(ChatUiState())
@@ -72,8 +75,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+    fun stopCurrentTask() { //提供停止方法！
+        stopFlag = true
+    }
     
     fun sendMessage(userInput: String) {
+        stopFlag = false  // 重置Flag，防止对话被停止
         if (userInput.isBlank() || _uiState.value.isLoading) return
         
         val accessibilityService = AutoGLMAccessibilityService.getInstance()
@@ -147,6 +154,15 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         var retryCount = 0
         
         while (stepCount < maxSteps) {
+            if (stopFlag) {
+                   _uiState.value = _uiState.value.copy(
+                   isLoading = false,
+                   taskCompletedMessage = "AI 对话已停止"
+               )
+                return
+            }
+        
+        
             Log.d("ChatViewModel", "执行步骤 $stepCount")
             
             // 截图
