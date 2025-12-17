@@ -52,7 +52,7 @@ fun MainScreen() {
         modifier = Modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("AutoGLM Android") }
+                title = { Text("AutoGLM 2.0") }
             )
         },
         bottomBar = {
