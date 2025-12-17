@@ -10,6 +10,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.TimeUnit
+import com.example.open_autoglm_android.service.AIMessageManager
 
 data class ModelResponse(
     val thinking: String,
@@ -72,6 +73,7 @@ class ModelClient(
         if (response.isSuccessful && response.body() != null) {
             val responseBody = response.body()!!
             val content = responseBody.choices.firstOrNull()?.message?.content ?: ""
+            AIMessageManager.postMessage("AI: ${modelResponse.action}")
             return parseResponse(content)
         } else {
             throw Exception("API request failed: ${response.code()} ${response.message()}")
