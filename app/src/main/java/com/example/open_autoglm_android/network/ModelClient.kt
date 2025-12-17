@@ -73,8 +73,9 @@ class ModelClient(
         if (response.isSuccessful && response.body() != null) {
             val responseBody = response.body()!!
             val content = responseBody.choices.firstOrNull()?.message?.content ?: ""
+            val modelResponse = parseResponse(content)
             AIMessageManager.postMessage("AI: ${modelResponse.action}")
-            return parseResponse(content)
+            return modelResponse
         } else {
             throw Exception("API request failed: ${response.code()} ${response.message()}")
         }
