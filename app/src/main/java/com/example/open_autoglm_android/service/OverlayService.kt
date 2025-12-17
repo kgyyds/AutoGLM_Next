@@ -9,16 +9,26 @@ import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
+import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import androidx.core.app.NotificationCompat
 import com.example.open_autoglm_android.R
+import kotlinx.coroutines.*
 
 class OverlayService : Service() {
 
     private lateinit var windowManager: WindowManager
     private lateinit var overlayView: View
+    private lateinit var recyclerView: RecyclerView
+    private val scope = CoroutineScope(Dispatchers.Main + Job())
+    private var collapsed = false
+
+    private val adapter = AIMessageAdapter()
 
     companion object {
         const val CHANNEL_ID = "overlay_service_channel"
@@ -30,9 +40,12 @@ class OverlayService : Service() {
         createNotificationChannel()
         startForeground(1, buildNotification())
 
-        // 初始化悬浮窗
         val layoutInflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
         overlayView = layoutInflater.inflate(R.layout.overlay_layout, null)
+
+        recyclerView = overlayView.findViewById(R.id.overlay_recycler)
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = adapter
 
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -46,21 +59,58 @@ class OverlayService : Service() {
             PixelFormat.TRANSLUCENT
         )
 
-        // 这里可以设置初始位置
+        params.gravity = Gravity.TOP or Gravity.START
         params.x = 0
         params.y = 100
 
-        windowManager.addView(overlayView, params)
-    }
+        // 可拖动
+        overlayView.setOnTouchListener(object : View.OnTouchListener {
+            private var initialX = 0
+            private var initialY = 0
+            private var touchX = 0f
+            private var touchY = 0f
 
-    // 给 AI 输出调用这个方法更新悬浮窗
-    fun updateText(text: String) {
-        // 假设 overlay_layout.xml 有一个 TextView，id = overlay_text
-        overlayView.findViewById<android.widget.TextView>(R.id.overlay_text)?.text = text
+            override fun onTouch(v: View?, event: MotionEvent?): Boolean {
+                event ?: return false
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        initialX = params.x
+                        initialY = params.y
+                        touchX = event.rawX
+                        touchY = event.rawY
+                        return true
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        params.x = initialX + (event.rawX - touchX).toInt()
+                        params.y = initialY + (event.rawY - touchY).toInt()
+                        windowManager.updateViewLayout(overlayView, params)
+                        return true
+                    }
+                }
+                return false
+            }
+        })
+
+        // 点击折叠/展开
+        overlayView.setOnClickListener {
+            collapsed = !collapsed
+            recyclerView.visibility = if (collapsed) View.GONE else View.VISIBLE
+        }
+
+        windowManager.addView(overlayView, params)
+
+        // 订阅 AI 消息
+        scope.launch {
+            AIMessageManager.msgFlow.collect { list ->
+                adapter.submitList(list)
+                recyclerView.scrollToPosition(list.size - 1)
+            }
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        scope.cancel()
         if (::overlayView.isInitialized) {
             windowManager.removeViewImmediate(overlayView)
         }
