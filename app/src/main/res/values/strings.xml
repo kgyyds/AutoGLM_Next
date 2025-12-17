@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Open-AutoGLM-Android</string>
+    <string name="accessibility_service_description">用于自动化手机操作，需要此权限来执行点击、滑动、输入等操作</string>
+</resources>
