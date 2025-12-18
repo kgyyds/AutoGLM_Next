@@ -248,35 +248,51 @@ fun SettingsScreen(
 
 
 // Max Tokens
-Text("Max Tokens: ${ModelParams.maxTokens}")
+var maxTokens by remember { mutableStateOf(ModelParams.maxTokens.toFloat()) }
+Text("Max Tokens: ${maxTokens.toInt()}")
 Slider(
-    value = ModelParams.maxTokens.toFloat(),
-    onValueChange = { ModelParams.maxTokens = it.toInt() },
+    value = maxTokens,
+    onValueChange = { 
+        maxTokens = it
+        ModelParams.maxTokens = it.toInt()
+    },
     valueRange = 1000f..8000f,
     steps = 7
 )
 
 // Temperature
-Text("Temperature: ${"%.2f".format(ModelParams.temperature)}")
+var temperature by remember { mutableStateOf(ModelParams.temperature.toFloat()) }
+Text("Temperature: ${"%.2f".format(temperature)}")
 Slider(
-    value = ModelParams.temperature.toFloat(),
-    onValueChange = { ModelParams.temperature = it.toDouble() },
+    value = temperature,
+    onValueChange = { 
+        temperature = it
+        ModelParams.temperature = it.toDouble()
+    },
     valueRange = 0f..2f
 )
 
 // Top P
-Text("Top P: ${"%.2f".format(ModelParams.topP)}")
+var topP by remember { mutableStateOf(ModelParams.topP.toFloat()) }
+Text("Top P: ${"%.2f".format(topP)}")
 Slider(
-    value = ModelParams.topP.toFloat(),
-    onValueChange = { ModelParams.topP = it.toDouble() },
+    value = topP,
+    onValueChange = { 
+        topP = it
+        ModelParams.topP = it.toDouble()
+    },
     valueRange = 0f..1f
 )
 
 // Frequency Penalty
-Text("Frequency Penalty: ${"%.2f".format(ModelParams.frequencyPenalty)}")
+var frequencyPenalty by remember { mutableStateOf(ModelParams.frequencyPenalty.toFloat()) }
+Text("Frequency Penalty: ${"%.2f".format(frequencyPenalty)}")
 Slider(
-    value = ModelParams.frequencyPenalty.toFloat(),
-    onValueChange = { ModelParams.frequencyPenalty = it.toDouble() },
+    value = frequencyPenalty,
+    onValueChange = { 
+        frequencyPenalty = it
+        ModelParams.frequencyPenalty = it.toDouble()
+    },
     valueRange = 0f..2f
 )
         
