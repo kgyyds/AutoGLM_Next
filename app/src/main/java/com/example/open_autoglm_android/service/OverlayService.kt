@@ -7,7 +7,6 @@ import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
 import android.view.*
-import android.widget.ImageView
 import androidx.core.app.NotificationCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -19,20 +18,16 @@ class OverlayService : Service() {
     private lateinit var windowManager: WindowManager
     private lateinit var overlayView: View
     private lateinit var recyclerView: RecyclerView
-    private lateinit var toggleBtn: ImageView
-    private lateinit var params: WindowManager.LayoutParams
-
-    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    private var collapsed = false
+    private lateinit var toggleBtn: View
 
     private val adapter = AIMessageAdapter()
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
+    private var collapsed = false
+    private lateinit var params: WindowManager.LayoutParams
 
     companion object {
         const val CHANNEL_ID = "overlay_service_channel"
-
-        private const val EXPANDED_WIDTH = 200
-        private const val EXPANDED_HEIGHT = 300
-        private const val COLLAPSED_SIZE = 48
     }
 
     override fun onCreate() {
@@ -52,8 +47,8 @@ class OverlayService : Service() {
         recyclerView.adapter = adapter
 
         params = WindowManager.LayoutParams(
-            EXPANDED_WIDTH,
-            EXPANDED_HEIGHT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
             else
@@ -65,71 +60,49 @@ class OverlayService : Service() {
 
         params.gravity = Gravity.TOP or Gravity.START
         params.x = 0
-        params.y = 120
+        params.y = 200
 
-        setupDrag()
-        setupToggle()
-
-        windowManager.addView(overlayView, params)
-
-        // 订阅 AI 消息
-        scope.launch {
-            AIMessageManager.msgFlow.collect { list ->
-                if (!collapsed) {
-                    adapter.submitList(list)
-                    recyclerView.scrollToPosition(list.size - 1)
-                }
-            }
-        }
-    }
-
-    /** 拖动逻辑 */
-    private fun setupDrag() {
+        // 拖动悬浮窗
         overlayView.setOnTouchListener(object : View.OnTouchListener {
-            private var initialX = 0
-            private var initialY = 0
+            private var lastX = 0
+            private var lastY = 0
             private var downX = 0f
             private var downY = 0f
 
             override fun onTouch(v: View?, event: MotionEvent): Boolean {
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
-                        initialX = params.x
-                        initialY = params.y
+                        lastX = params.x
+                        lastY = params.y
                         downX = event.rawX
                         downY = event.rawY
                         return false
                     }
                     MotionEvent.ACTION_MOVE -> {
-                        params.x = initialX + (event.rawX - downX).toInt()
-                        params.y = initialY + (event.rawY - downY).toInt()
+                        params.x = lastX + (event.rawX - downX).toInt()
+                        params.y = lastY + (event.rawY - downY).toInt()
                         windowManager.updateViewLayout(overlayView, params)
-                        return true
+                        return false
                     }
                 }
                 return false
             }
         })
-    }
 
-    /** 折叠 / 展开 */
-    private fun setupToggle() {
+        // 折叠 / 展开
         toggleBtn.setOnClickListener {
             collapsed = !collapsed
+            recyclerView.visibility = if (collapsed) View.GONE else View.VISIBLE
+        }
 
-            if (collapsed) {
-                recyclerView.visibility = View.GONE
-                params.width = COLLAPSED_SIZE
-                params.height = COLLAPSED_SIZE
-                toggleBtn.setImageResource(R.drawable.ic_expand)
-            } else {
-                recyclerView.visibility = View.VISIBLE
-                params.width = EXPANDED_WIDTH
-                params.height = EXPANDED_HEIGHT
-                toggleBtn.setImageResource(R.drawable.ic_collapse)
+        windowManager.addView(overlayView, params)
+
+        // 订阅 AI 消息
+        scope.launch {
+            AIMessageManager.msgFlow.collect { list ->
+                adapter.submitList(list)
+                recyclerView.scrollToPosition(list.size - 1)
             }
-
-            windowManager.updateViewLayout(overlayView, params)
         }
     }
 
