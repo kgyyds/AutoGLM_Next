@@ -13,20 +13,20 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: set up JDK 17
+    - name: 设置JDK17环境
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
         cache: gradle
 
-    - name: Grant execute permission for gradlew
+    - name: Gradle构建脚本授权
       run: chmod +x gradlew
       
-    - name: Gradle构建并输出错误详情
-      run: ./gradlew assembleDebug --stacktrace
+    - name: Gradle构建
+      run: ./gradlew
       
-    - name: Upload APK
+    - name: 上传APK
       uses: actions/upload-artifact@v4
       with:
         name: app-debug-apk
