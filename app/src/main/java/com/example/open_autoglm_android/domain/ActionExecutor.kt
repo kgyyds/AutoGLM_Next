@@ -625,6 +625,37 @@ class ActionExecutor(private val service: AutoGLMAccessibilityService) {
     }
     
     private fun getPackageName(appName: String): String {
+    val pm = service.packageManager
+
+    val intent = Intent(Intent.ACTION_MAIN).apply {
+        addCategory(Intent.CATEGORY_LAUNCHER)
+    }
+
+    // 构建： 应用名 -> 包名 的映射表
+    val appPackageMap = HashMap<String, String>()
+
+    pm.queryIntentActivities(intent, 0).forEach { info ->
+        val name = info.loadLabel(pm).toString()
+        val pkg = info.activityInfo.packageName
+
+        // 原始名
+        appPackageMap[name] = pkg
+
+        // 一些常见归一化（不改你调用方式）
+        appPackageMap[name.lowercase()] = pkg
+    }
+
+    // 查表，查不到就原样返回（保持你原有行为）
+    return appPackageMap[appName]
+        ?: appPackageMap[appName.lowercase()]
+        ?: appName
+}
+    
+    
+    
+    
+    /*
+    private fun getPackageName(appName: String): String {
         // 应用名到包名映射
         val appPackageMap = mapOf(
             // Social & Messaging
@@ -807,6 +838,7 @@ class ActionExecutor(private val service: AutoGLMAccessibilityService) {
         )
         return appPackageMap[appName] ?: appName
     }
+    */
     
     private fun findEditableNode(root: AccessibilityNodeInfo): AccessibilityNodeInfo? {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
