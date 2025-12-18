@@ -22,8 +22,10 @@ jobs:
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    - name: Build with Gradle
-      run: ./gradlew build
+      
+    - name: Gradle构建并输出错误详情
+      run: ./gradlew assembleDebug --stacktrace
+      
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
