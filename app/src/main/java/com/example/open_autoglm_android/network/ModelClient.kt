@@ -11,19 +11,13 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.TimeUnit
 import com.example.open_autoglm_android.service.AIMessageManager
-
+import com.example.open_autoglm_android.model.ModelParams
 data class ModelResponse(
     val thinking: String,
     val action: String
 )
 
-// 新建一个模型参数保存单例，方便在全局调用，这个为全局变量，由ModelResponse调用
-object ModelParams {
-    var maxTokens: Float = 3000
-    var temperature: Float = 0.0
-    var topP: Float = 0.85
-    var frequencyPenalty: Float = 0.2
-}
+
 
 
 class ModelClient(
@@ -64,7 +58,7 @@ class ModelClient(
         val request = ChatRequest(
             model = modelName,
             messages = messages,
-            maxTokens = ModelParams.maxTokens.toInt(),
+            maxTokens = ModelParams.maxTokens,
             temperature = ModelParams.temperature,
             topP = ModelParams.topP,
             frequencyPenalty = ModelParams.frequencyPenalty,

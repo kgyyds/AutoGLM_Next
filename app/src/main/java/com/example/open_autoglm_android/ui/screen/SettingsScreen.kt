@@ -15,7 +15,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.open_autoglm_android.ui.viewmodel.SettingsViewModel
 import androidx.core.content.ContextCompat
 import com.example.open_autoglm_android.service.OverlayService
-
+import com.example.open_autoglm_android.model.ModelParams
 
 @OptIn(ExperimentalMaterial3Api::class)
 
@@ -246,11 +246,12 @@ fun SettingsScreen(
         }
 /// 添加一些滑动条，调整 AI 参数，变量作用于全局参数
 
+
 // Max Tokens
-Text("Max Tokens: ${ModelParams.maxTokens.toInt()}")
+Text("Max Tokens: ${ModelParams.maxTokens}")
 Slider(
-    value = ModelParams.maxTokens,
-    onValueChange = { ModelParams.maxTokens = it },
+    value = ModelParams.maxTokens.toFloat(),
+    onValueChange = { ModelParams.maxTokens = it.toInt() },
     valueRange = 1000f..8000f,
     steps = 7
 )
@@ -258,24 +259,24 @@ Slider(
 // Temperature
 Text("Temperature: ${"%.2f".format(ModelParams.temperature)}")
 Slider(
-    value = ModelParams.temperature,
-    onValueChange = { ModelParams.temperature = it },
+    value = ModelParams.temperature.toFloat(),
+    onValueChange = { ModelParams.temperature = it.toDouble() },
     valueRange = 0f..2f
 )
 
 // Top P
 Text("Top P: ${"%.2f".format(ModelParams.topP)}")
 Slider(
-    value = ModelParams.topP,
-    onValueChange = { ModelParams.topP = it },
+    value = ModelParams.topP.toFloat(),
+    onValueChange = { ModelParams.topP = it.toDouble() },
     valueRange = 0f..1f
 )
 
 // Frequency Penalty
 Text("Frequency Penalty: ${"%.2f".format(ModelParams.frequencyPenalty)}")
 Slider(
-    value = ModelParams.frequencyPenalty,
-    onValueChange = { ModelParams.frequencyPenalty = it },
+    value = ModelParams.frequencyPenalty.toFloat(),
+    onValueChange = { ModelParams.frequencyPenalty = it.toDouble() },
     valueRange = 0f..2f
 )
         
