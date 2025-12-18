@@ -17,6 +17,15 @@ data class ModelResponse(
     val action: String
 )
 
+// 新建一个模型参数保存单例，方便在全局调用，这个为全局变量，由ModelResponse调用
+object ModelParams {
+    var maxTokens: Int = 3000
+    var temperature: Double = 0.0
+    var topP: Double = 0.85
+    var frequencyPenalty: Double = 0.2
+}
+
+
 class ModelClient(
     baseUrl: String,
     apiKey: String
@@ -55,10 +64,10 @@ class ModelClient(
         val request = ChatRequest(
             model = modelName,
             messages = messages,
-            maxTokens = 3000,
-            temperature = 0.0,
-            topP = 0.85,
-            frequencyPenalty = 0.2,
+            maxTokens = ModelParams.maxTokens,
+            temperature = ModelParams.temperature,
+            topP = ModelParams.topP,
+            frequencyPenalty = ModelParams.frequencyPenalty,
             stream = false
         )
         

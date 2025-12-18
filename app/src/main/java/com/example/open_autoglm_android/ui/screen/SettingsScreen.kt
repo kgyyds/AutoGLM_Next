@@ -18,6 +18,45 @@ import com.example.open_autoglm_android.service.OverlayService
 
 
 @OptIn(ExperimentalMaterial3Api::class)
+//整数滑动条
+@Composable
+fun IntSliderSetting(
+    title: String,
+    value: Int,
+    range: IntRange,
+    onValueChange: (Int) -> Unit
+) {
+    Column {
+        Text("$title：$value")
+        Slider(
+            value = value.toFloat(),
+            onValueChange = { onValueChange(it.toInt()) },
+            valueRange = range.first.toFloat()..range.last.toFloat(),
+            steps = range.last - range.first - 1
+        )
+    }
+}
+//浮点滑动条
+@Composable
+fun FloatSliderSetting(
+    title: String,
+    value: Float,
+    range: ClosedFloatingPointRange<Float>,
+    onValueChange: (Float) -> Unit,
+    precision: Int = 2
+) {
+    Column {
+        Text(
+            "$title：${"%." + precision + "f".format(value)}"
+        )
+        Slider(
+            value = value,
+            onValueChange = onValueChange,
+            valueRange = range
+        )
+    }
+}
+
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
@@ -242,6 +281,39 @@ fun SettingsScreen(
                 }
             }
         }
+ ///添加一些滑动条，调整AI参数。变量作用于全局参数。       
+// Max Tokens
+Text("Max Tokens: ${ModelParams.maxTokens}")
+Slider(
+    value = ModelParams.maxTokens.toFloat(),
+    onValueChange = { ModelParams.maxTokens = it.toInt() },
+    valueRange = 1000f..8000f,
+    steps = 7
+)
+
+// Temperature
+Text("Temperature: ${"%.2f".format(ModelParams.temperature)}")
+Slider(
+    value = ModelParams.temperature.toFloat(),
+    onValueChange = { ModelParams.temperature = it.toDouble() },
+    valueRange = 0f..2f
+)
+
+// Top P
+Text("Top P: ${"%.2f".format(ModelParams.topP)}")
+Slider(
+    value = ModelParams.topP.toFloat(),
+    onValueChange = { ModelParams.topP = it.toDouble() },
+    valueRange = 0f..1f
+)
+
+// Frequency Penalty
+Text("Frequency Penalty: ${"%.2f".format(ModelParams.frequencyPenalty)}")
+Slider(
+    value = ModelParams.frequencyPenalty.toFloat(),
+    onValueChange = { ModelParams.frequencyPenalty = it.toDouble() },
+    valueRange = 0f..2f
+)
         
         Spacer(modifier = Modifier.height(16.dp))
         
