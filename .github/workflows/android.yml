@@ -68,9 +68,9 @@ jobs:
           ossutil config \
             --access-key-id=$OSS_KEY \
             --access-key-secret=$OSS_SECRET \
-            --endpoint=oss-cn-beijing.aliyuncs.com
+            --endpoint=oss-cn-guangzhou.aliyuncs.com
 
           ossutil cp \
             app/build/outputs/apk/debug/app-debug.apk \
-            oss://githubkgyyds/ci-builds/app-debug.apk \
+            oss://kgyydsgithub/ci-builds/app-debug.apk \
             -f
