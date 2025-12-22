@@ -76,20 +76,20 @@ fun MainScreen() {
             modifier = Modifier.fillMaxSize(),
             topBar = {
                 TopAppBar(
-                    title = { Text("AutoGLM Android") }
+                    title = { Text("AutoGLM-PRO") }
                 )
             },
             bottomBar = {
                 NavigationBar {
                     NavigationBarItem(
                         icon = { Icon(Icons.Filled.Message, contentDescription = null) },
-                        label = { Text("对话") },
+                        label = { Text("") },
                         selected = selectedTab == 0,
                         onClick = { selectedTab = 0 }
                     )
                     NavigationBarItem(
                         icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
-                        label = { Text("设置") },
+                        label = { Text("") },
                         selected = selectedTab == 1,
                         onClick = { 
                             selectedTab = 1
