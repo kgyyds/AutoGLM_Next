@@ -515,22 +515,26 @@ class ActionExecutor(private val service: AutoGLMAccessibilityService) {
         addCategory(Intent.CATEGORY_LAUNCHER)
     }
 
-    // 应用名 -> 包名
+    // 构建： 应用名 -> 包名 的映射表
     val appPackageMap = HashMap<String, String>()
 
     pm.queryIntentActivities(intent, 0).forEach { info ->
         val name = info.loadLabel(pm).toString()
         val pkg = info.activityInfo.packageName
 
+        // 原始名
         appPackageMap[name] = pkg
-        appPackageMap[name.toLowerCase()] = pkg   // ✅ 关键修复
+
+        // 一些常见归一化（不改你调用方式）
+        appPackageMap[name.lowercase()] = pkg
     }
 
+    // 查表，查不到就原样返回（保持你原有行为）
     return appPackageMap[appName]
-        ?: appPackageMap[appName.toLowerCase()]   // ✅ 关键修复
+        ?: appPackageMap[appName.lowercase()]
         ?: appName
 }
-
+    
     
     
     
