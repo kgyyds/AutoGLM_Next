@@ -80,7 +80,12 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
-    
+    // RecyclerView（必须）
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
+
+    // 可选：如果你想用 RecyclerView + 动画
+    implementation("androidx.recyclerview:recyclerview-selection:1.1.0")
+
     // Desugaring
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
