@@ -1,10 +1,16 @@
 package com.example.open_autoglm_android.ui.screen
 
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.provider.Settings
+import android.view.inputmethod.InputMethodManager
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -12,31 +18,35 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.open_autoglm_android.data.InputMode
 import com.example.open_autoglm_android.ui.viewmodel.SettingsViewModel
-import androidx.core.content.ContextCompat
-import com.example.open_autoglm_android.service.OverlayService
-import com.example.open_autoglm_android.model.ModelParams
+import com.example.open_autoglm_android.util.AuthHelper
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
-
-
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
+    onNavigateToAdvancedAuth: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-
-    var overlayEnabled by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
-    // 当屏幕可见时检查服务状态
+    val hasWriteSecureSettings = remember { mutableStateOf(false) }
+    
     LaunchedEffect(Unit) {
-        viewModel.checkAccessibilityService()
+        hasWriteSecureSettings.value = AuthHelper.hasWriteSecureSettingsPermission(context)
     }
     
-    // 使用 DisposableEffect 在每次进入设置页面时刷新状态
+    LaunchedEffect(Unit) {
+        viewModel.checkAccessibilityService()
+        viewModel.checkImeStatus()
+    }
+    
     DisposableEffect(Unit) {
         viewModel.checkAccessibilityService()
+        viewModel.checkOverlayPermission()
+        viewModel.checkImeStatus()
         onDispose { }
     }
     
@@ -64,247 +74,242 @@ fun SettingsScreen(
                 }
             )
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
+                        Text(text = "无障碍服务", style = MaterialTheme.typography.titleMedium)
                         Text(
-                            text = "无障碍服务",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Text(
-                            text = if (uiState.isAccessibilityEnabled) {
-                                "已启用"
-                            } else {
-                                "未启用 - 点击前往设置"
-                            },
+                            text = if (uiState.isAccessibilityEnabled) "已启用" else "未启用 - 点击前往设置",
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
                     if (!uiState.isAccessibilityEnabled) {
-                        Button(
-                            onClick = {
-                                val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                                context.startActivity(intent)
-                            }
-                        ) {
-                            Text("前往设置")
-                        }
+                        Button(onClick = {
+                            context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                        }) { Text("前往设置") }
                     }
                 }
             }
         }
-        // 悬浮窗权限卡片
+        
+        // 输入模式设置
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                Text(text = "输入方式 (Type Action)", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                InputMode.values().forEach { mode ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = uiState.inputMode == mode,
+                            onClick = { viewModel.setInputMode(mode) }
+                        )
+                        Text(
+                            text = when(mode) {
+                                InputMode.SET_TEXT -> "直接设置文本 (标准)"
+                                InputMode.PASTE -> "复制粘贴 (兼容性好)"
+                                InputMode.IME -> "输入法模拟 (最强悍)"
+                            },
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+                }
+
+                if (uiState.inputMode == InputMode.IME) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    if (!uiState.isImeEnabled) {
+                        Button(
+                            onClick = { context.startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("1. 启用 AutoGLM 输入法") }
+                    } else if (!uiState.isImeSelected) {
+                        Button(
+                            onClick = {
+                                val imm = context.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                                imm.showInputMethodPicker()
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("2. 切换为 AutoGLM 输入法") }
+                    } else {
+                        Text(
+                            text = "✓ 输入法已就绪",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            }
+        }
+
+        // 悬浮窗设置
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
-                containerColor = if (overlayEnabled) {
+                containerColor = if (uiState.floatingWindowEnabled && uiState.hasOverlayPermission) {
                     MaterialTheme.colorScheme.primaryContainer
-                    
                 } else {
-                    MaterialTheme.colorScheme.errorContainer
+                    MaterialTheme.colorScheme.surfaceVariant
                 }
             )
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
-                        Text("悬浮窗权限", style = MaterialTheme.typography.titleMedium)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "悬浮窗", style = MaterialTheme.typography.titleMedium)
                         Text(
-                            text = if (overlayEnabled) "已授权" else "未授权 - 点击前往设置",
+                            text = if (!uiState.hasOverlayPermission) "需要悬浮窗权限" else if (uiState.floatingWindowEnabled) "已启用" else "未启用",
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
-                    if (!overlayEnabled) {
+                    if (!uiState.hasOverlayPermission) {
                         Button(onClick = {
-                            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
-                            context.startActivity(intent)
-                        }) {
-                            Text("前往设置")
-                        }
-                    }
-                    if (overlayEnabled) {
-    Spacer(modifier = Modifier.height(12.dp))
-
-    Button(
-        onClick = {
-            val intent = Intent(context, OverlayService::class.java)
-            ContextCompat.startForegroundService(context, intent)
-        },
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text("启动悬浮窗")
-    }
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
+                                context.startActivity(intent)
+                            }
+                        }) { Text("授权") }
+                    } else {
+                        Switch(checked = uiState.floatingWindowEnabled, onCheckedChange = { viewModel.setFloatingWindowEnabled(it) })
                     }
                 }
             }
         }
+
         Divider()
-        
-        // API Key 设置
+
+        // 实验型功能
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Science, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "实验型功能", style = MaterialTheme.typography.titleMedium)
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "图片压缩", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            text = "发送给模型前压缩图片，减少流量消耗和延迟",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    Switch(
+                        checked = uiState.imageCompressionEnabled,
+                        onCheckedChange = { viewModel.setImageCompressionEnabled(it) }
+                    )
+                }
+                
+                if (uiState.imageCompressionEnabled) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "压缩级别: ${uiState.imageCompressionLevel}%",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Slider(
+                        value = uiState.imageCompressionLevel.toFloat(),
+                        onValueChange = { viewModel.setImageCompressionLevel(it.roundToInt()) },
+                        valueRange = 10f..100f,
+                        steps = 8
+                    )
+                }
+            }
+        }
+
+        Divider()
+
+        // 高级授权
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = if (hasWriteSecureSettings.value) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "高级授权与无感保活", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            text = if (hasWriteSecureSettings.value) "✓ 已授权" else "✗ 未授权",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    IconButton(onClick = onNavigateToAdvancedAuth) { Icon(Icons.Filled.ArrowForward, contentDescription = null) }
+                }
+            }
+        }
+
+        Divider()
+
         OutlinedTextField(
             value = uiState.apiKey,
             onValueChange = { viewModel.updateApiKey(it) },
             label = { Text("API Key") },
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            placeholder = { Text("输入你的 API Key") }
+            singleLine = true
         )
         
-        // Base URL 设置
         OutlinedTextField(
             value = uiState.baseUrl,
             onValueChange = { viewModel.updateBaseUrl(it) },
             label = { Text("Base URL") },
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            placeholder = { Text("https://open.bigmodel.cn/api/paas/v4") }
+            singleLine = true
         )
         
-        // Model Name 设置
         OutlinedTextField(
             value = uiState.modelName,
             onValueChange = { viewModel.updateModelName(it) },
             label = { Text("Model Name") },
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            placeholder = { Text("autoglm-phone") }
+            singleLine = true
         )
         
-        // 保存按钮
         Button(
             onClick = { viewModel.saveSettings() },
             modifier = Modifier.fillMaxWidth(),
             enabled = !uiState.isLoading
         ) {
-            if (uiState.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp
-                )
-            } else {
-                Text("保存设置")
-            }
+            if (uiState.isLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            else Text("保存设置")
         }
         
-        // 成功/错误提示
-        uiState.saveSuccess?.let {
-            if (it) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
-                ) {
-                    Text(
-                        text = "设置已保存",
-                        modifier = Modifier.padding(12.dp),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
-        }
-        
-        uiState.error?.let { error ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = error,
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
-                    TextButton(onClick = { viewModel.clearError() }) {
-                        Text("关闭")
-                    }
-                }
-            }
-        }
-/// 添加一些滑动条，调整 AI 参数，变量作用于全局参数
-
-
-// Max Tokens
-var maxTokens by remember { mutableStateOf(ModelParams.maxTokens.toFloat()) }
-Text("Max Tokens: ${maxTokens.toInt()}")
-Slider(
-    value = maxTokens,
-    onValueChange = { 
-        maxTokens = it
-        ModelParams.maxTokens = it.toInt()
-    },
-    valueRange = 1000f..8000f,
-    steps = 7
-)
-
-// Temperature
-var temperature by remember { mutableStateOf(ModelParams.temperature.toFloat()) }
-Text("Temperature: ${"%.2f".format(temperature)}")
-Slider(
-    value = temperature,
-    onValueChange = { 
-        temperature = it
-        ModelParams.temperature = it.toDouble()
-    },
-    valueRange = 0f..2f
-)
-
-// Top P
-var topP by remember { mutableStateOf(ModelParams.topP.toFloat()) }
-Text("Top P: ${"%.2f".format(topP)}")
-Slider(
-    value = topP,
-    onValueChange = { 
-        topP = it
-        ModelParams.topP = it.toDouble()
-    },
-    valueRange = 0f..1f
-)
-
-// Frequency Penalty
-var frequencyPenalty by remember { mutableStateOf(ModelParams.frequencyPenalty.toFloat()) }
-Text("Frequency Penalty: ${"%.2f".format(frequencyPenalty)}")
-Slider(
-    value = frequencyPenalty,
-    onValueChange = { 
-        frequencyPenalty = it
-        ModelParams.frequencyPenalty = it.toDouble()
-    },
-    valueRange = 0f..2f
-)
+        uiState.saveSuccess?.let { if (it) { Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) { Text(text = "设置已保存", modifier = Modifier.padding(12.dp)) } } }
+        uiState.error?.let { error -> Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) { Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) { Text(text = error); TextButton(onClick = { viewModel.clearError() }) { Text("关闭") } } } }
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        // 说明文字
         Text(
-            text = "说明：\n" +
-                    "1. 请先开启无障碍服务\n" +
-                    "2. 在智谱平台申请 API Key\n" +
-                    "3. 填写 API Key 和其他配置\n" +
-                    "4. 保存设置后即可使用",
+            text = "说明：\n1. 开启无障碍服务\n2. 若遇到输入框无法输入，请尝试切换输入方式为“复制粘贴”或“输入法模拟”\n3. 使用“输入法模拟”时需要先在系统设置中启用并切换到 AutoGLM 输入法",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

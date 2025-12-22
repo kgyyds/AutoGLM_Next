@@ -14,8 +14,8 @@ android {
         applicationId = "com.example.open_autoglm_android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 210
-        versionName = "2.1.0"
+        versionCode = 320
+        versionName = "3.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -53,6 +53,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("debug")
             // 只有在签名配置存在时才使用
             if (signingConfigs.findByName("release")?.storeFile?.exists() == true) {
                 signingConfig = signingConfigs.getByName("release")
@@ -62,12 +63,15 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        // Enable Java 8+ API desugaring
+        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
         jvmTarget = "11"
     }
     buildFeatures {
         compose = true
+        aidl = true
     }
 }
 
@@ -77,6 +81,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     
+    // Desugaring
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
+
     // Compose
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
@@ -99,13 +106,13 @@ dependencies {
     
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
-
-
-    // RecyclerView
-    implementation("androidx.recyclerview:recyclerview:1.3.1")
-
+    
     // Image Loading
     implementation(libs.coil.compose)
+    
+    // Shizuku SDK for advanced permissions
+    implementation(libs.shizuku.api)
+    implementation(libs.shizuku.provider)
     
     // Testing
     testImplementation(libs.junit)

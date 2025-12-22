@@ -2,6 +2,7 @@ package com.example.open_autoglm_android
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
@@ -12,9 +13,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.open_autoglm_android.ui.screen.AdvancedAuthScreen
 import com.example.open_autoglm_android.ui.screen.ChatScreen
 import com.example.open_autoglm_android.ui.screen.SettingsScreen
+import com.example.open_autoglm_android.ui.screen.PromptLogScreen
 import com.example.open_autoglm_android.ui.theme.OpenAutoGLMAndroidTheme
+import com.example.open_autoglm_android.ui.viewmodel.AdvancedAuthViewModel
 import com.example.open_autoglm_android.ui.viewmodel.ChatViewModel
 import com.example.open_autoglm_android.ui.viewmodel.SettingsViewModel
 
@@ -33,57 +37,101 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
-    var selectedTab by remember { mutableStateOf(0) }
-    var previousTab by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableIntStateOf(0) }
+    var previousTab by remember { mutableIntStateOf(0) }
+    var showAdvancedAuth by remember { mutableStateOf(false) }
+    var showPromptLog by remember { mutableStateOf(false) }
     
     val chatViewModel: ChatViewModel = viewModel()
     val settingsViewModel: SettingsViewModel = viewModel()
+    val advancedAuthViewModel: AdvancedAuthViewModel = viewModel()
     
+    // 处理系统返回键
+    if (showAdvancedAuth) {
+        BackHandler { showAdvancedAuth = false }
+    } else if (showPromptLog) {
+        BackHandler { showPromptLog = false }
+    } else if (chatViewModel.uiState.collectAsState().value.isDrawerOpen) {
+        BackHandler { chatViewModel.closeDrawer() }
+    }
+
     // 当切换到设置页面时，刷新无障碍服务状态
     LaunchedEffect(selectedTab) {
         if (selectedTab == 1 && previousTab != 1) {
-            // 从其他页面切换到设置页面
             settingsViewModel.checkAccessibilityService()
         }
         previousTab = selectedTab
     }
     
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = { Text("AutoGLM 2.0") }
-            )
-        },
-        bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    icon = { Icon(Icons.Filled.Message, contentDescription = null) },
-                    label = { Text("对话") },
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 }
+    // 当从高级授权页面返回时，刷新权限状态
+    LaunchedEffect(showAdvancedAuth) {
+        if (!showAdvancedAuth) {
+            advancedAuthViewModel.checkAllPermissions()
+        }
+    }
+    
+    // 使用 Box 堆叠页面，这样在查看日志时，主页面状态（如 ViewModel）更加稳定
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            topBar = {
+                TopAppBar(
+                    title = { Text("AutoGLM Android") }
                 )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
-                    label = { Text("设置") },
-                    selected = selectedTab == 1,
-                    onClick = { 
-                        selectedTab = 1
-                        // 点击设置时立即刷新状态
-                        settingsViewModel.checkAccessibilityService()
-                    }
+            },
+            bottomBar = {
+                NavigationBar {
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Filled.Message, contentDescription = null) },
+                        label = { Text("对话") },
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 }
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
+                        label = { Text("设置") },
+                        selected = selectedTab == 1,
+                        onClick = { 
+                            selectedTab = 1
+                            settingsViewModel.checkAccessibilityService()
+                        }
+                    )
+                }
+            }
+        ) { paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)) {
+                when (selectedTab) {
+                    0 -> ChatScreen(
+                        viewModel = chatViewModel,
+                        onNavigateToPromptLog = { showPromptLog = true },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    1 -> SettingsScreen(
+                        viewModel = settingsViewModel,
+                        onNavigateToAdvancedAuth = { showAdvancedAuth = true },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
+
+        // 高级授权页面覆盖层
+        if (showAdvancedAuth) {
+            Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                AdvancedAuthScreen(
+                    viewModel = advancedAuthViewModel,
+                    onBack = { showAdvancedAuth = false },
+                    modifier = Modifier.fillMaxSize()
                 )
             }
         }
-    ) { paddingValues ->
-        Box(modifier = Modifier.padding(paddingValues)) {
-            when (selectedTab) {
-                0 -> ChatScreen(
+
+        // 提示词日志页面覆盖层
+        if (showPromptLog) {
+            Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                PromptLogScreen(
                     viewModel = chatViewModel,
-                    modifier = Modifier.fillMaxSize()
-                )
-                1 -> SettingsScreen(
-                    viewModel = settingsViewModel,
+                    onBack = { showPromptLog = false },
                     modifier = Modifier.fillMaxSize()
                 )
             }

@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">AutoGLM_2.0</string>
-    <string name="accessibility_service_description">用于自动化手机操作，需要此权限来执行点击、滑动、输入等操作</string>
+    <string name="app_name">AutoGLM-PRO_3.2.0</string>
+    <string name="accessibility_service_description">用于自动化手机操作</string>
 </resources>
