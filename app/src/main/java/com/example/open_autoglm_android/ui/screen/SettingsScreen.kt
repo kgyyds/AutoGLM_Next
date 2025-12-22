@@ -95,6 +95,100 @@ fun SettingsScreen(
                 }
             }
         }
+// 悬浮窗设置
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = if (uiState.floatingWindowEnabled && uiState.hasOverlayPermission) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant
+                }
+            )
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "悬浮窗", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            text = if (!uiState.hasOverlayPermission) "需要悬浮窗权限" else if (uiState.floatingWindowEnabled) "已启用" else "未启用",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    if (!uiState.hasOverlayPermission) {
+                        Button(onClick = {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
+                                context.startActivity(intent)
+                            }
+                        }) { Text("授权") }
+                    } else {
+                        Switch(checked = uiState.floatingWindowEnabled, onCheckedChange = { viewModel.setFloatingWindowEnabled(it) })
+                    }
+                }
+            }
+        }
+        
+        
+        
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Science, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "实验型功能", style = MaterialTheme.typography.titleMedium)
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "图片压缩", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            text = "发送给模型前压缩图片，减少流量消耗和延迟",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    Switch(
+                        checked = uiState.imageCompressionEnabled,
+                        onCheckedChange = { viewModel.setImageCompressionEnabled(it) }
+                    )
+                }
+                
+                if (uiState.imageCompressionEnabled) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "压缩级别: ${uiState.imageCompressionLevel}%",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Slider(
+                        value = uiState.imageCompressionLevel.toFloat(),
+                        onValueChange = { viewModel.setImageCompressionLevel(it.roundToInt()) },
+                        valueRange = 10f..100f,
+                        steps = 8
+                    )
+                }
+            }
+        }
+
+        
+        Divider()
+        
+        
         
         // 输入模式设置
         Card(
@@ -151,96 +245,11 @@ fun SettingsScreen(
             }
         }
 
-        // 悬浮窗设置
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = if (uiState.floatingWindowEnabled && uiState.hasOverlayPermission) {
-                    MaterialTheme.colorScheme.primaryContainer
-                } else {
-                    MaterialTheme.colorScheme.surfaceVariant
-                }
-            )
-        ) {
-            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(text = "悬浮窗", style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            text = if (!uiState.hasOverlayPermission) "需要悬浮窗权限" else if (uiState.floatingWindowEnabled) "已启用" else "未启用",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                    if (!uiState.hasOverlayPermission) {
-                        Button(onClick = {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
-                                context.startActivity(intent)
-                            }
-                        }) { Text("授权") }
-                    } else {
-                        Switch(checked = uiState.floatingWindowEnabled, onCheckedChange = { viewModel.setFloatingWindowEnabled(it) })
-                    }
-                }
-            }
-        }
+        
 
-        Divider()
 
-        // 实验型功能
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Science, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "实验型功能", style = MaterialTheme.typography.titleMedium)
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(text = "图片压缩", style = MaterialTheme.typography.bodyLarge)
-                        Text(
-                            text = "发送给模型前压缩图片，减少流量消耗和延迟",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                    Switch(
-                        checked = uiState.imageCompressionEnabled,
-                        onCheckedChange = { viewModel.setImageCompressionEnabled(it) }
-                    )
-                }
-                
-                if (uiState.imageCompressionEnabled) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "压缩级别: ${uiState.imageCompressionLevel}%",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Slider(
-                        value = uiState.imageCompressionLevel.toFloat(),
-                        onValueChange = { viewModel.setImageCompressionLevel(it.roundToInt()) },
-                        valueRange = 10f..100f,
-                        steps = 8
-                    )
-                }
-            }
-        }
+
+        
 
         Divider()
 

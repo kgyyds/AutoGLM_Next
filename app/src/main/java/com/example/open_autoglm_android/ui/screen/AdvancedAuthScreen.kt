@@ -87,7 +87,7 @@ fun AdvancedAuthScreen(
                                 text = if (uiState.hasWriteSecureSettings) {
                                     "✓ 已授权 - 无感保活功能可用"
                                 } else {
-                                    "✗ 未授权 - 请选择下方任一方式授权"
+                                    "X 未授权 - 请选择下方任一方式授权"
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 modifier = Modifier.padding(top = 4.dp)
@@ -137,7 +137,7 @@ fun AdvancedAuthScreen(
                             shape = MaterialTheme.shapes.small
                         ) {
                             Text(
-                                text = "⚠️ 提示：需要先完成下方任一授权方式，才能启用无感保活功能",
+                                text = "⚠️需要先完成下方任一授权方式，才能启用无感保活功能",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.padding(8.dp)
