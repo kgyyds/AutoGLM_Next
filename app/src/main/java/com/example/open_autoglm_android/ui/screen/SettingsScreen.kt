@@ -1,5 +1,9 @@
 package com.example.open_autoglm_android.ui.screen
 
+import www.sanju.motiontoast.MotionToast
+import www.sanju.motiontoast.MotionToastStyle
+import androidx.core.content.res.ResourcesCompat
+
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -30,6 +34,18 @@ fun SettingsScreen(
     onNavigateToAdvancedAuth: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    MotionToast.createToast(
+    this,                       // Activity
+    "完成啦",
+    "操作已经成功执行",
+    MotionToastStyle.SUCCESS,    // SUCCESS / ERROR / WARNING / INFO / DELETE
+    MotionToast.GRAVITY_BOTTOM,  // TOP / CENTER / BOTTOM
+    MotionToast.LONG_DURATION,   // SHORT / LONG
+    ResourcesCompat.getFont(this, R.font.roboto_regular)
+)
+
+
+    
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val hasWriteSecureSettings = remember { mutableStateOf(false) }
