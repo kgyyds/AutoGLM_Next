@@ -3,7 +3,7 @@ package com.example.open_autoglm_android.ui.screen
 import www.sanju.motiontoast.MotionToast
 import www.sanju.motiontoast.MotionToastStyle
 import androidx.core.content.res.ResourcesCompat
-
+import androidx.compose.ui.platform.LocalContext
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -34,15 +34,7 @@ fun SettingsScreen(
     onNavigateToAdvancedAuth: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    MotionToast.createToast(
-    this,                       // Activity
-    "完成啦",
-    "操作已经成功执行",
-    MotionToastStyle.SUCCESS,    // SUCCESS / ERROR / WARNING / INFO / DELETE
-    MotionToast.GRAVITY_BOTTOM,  // TOP / CENTER / BOTTOM
-    MotionToast.LONG_DURATION,   // SHORT / LONG
-    ResourcesCompat.getFont(this, R.font.roboto_regular)
-)
+    val context = LocalContext.current   // ✅ 这才是 Compose 的“this”
 
 
     
@@ -201,7 +193,19 @@ fun SettingsScreen(
             }
         }
 
-        
+        Button(onClick = {
+        MotionToast.createToast(
+            context,
+            "成功",
+            "设置已保存",
+            MotionToastStyle.SUCCESS,
+            MotionToast.GRAVITY_BOTTOM,
+            MotionToast.SHORT_DURATION,
+            null   // 👈 先别用字体
+        )
+    }) {
+        Text("点我")
+    }
         Divider()
         
         
