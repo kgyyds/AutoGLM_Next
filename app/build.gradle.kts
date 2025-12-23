@@ -87,7 +87,7 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview-selection:1.1.0")
     
     //toast库
-    implementation("com.github.Spikeysanju:MotionToast:1.5")
+    implementation("com.github.Spikeysanju:MotionToast:1.4")
     
     
     
